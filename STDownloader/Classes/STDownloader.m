@@ -58,6 +58,16 @@
     }
     return self;
 }
+- (instancetype)initWithDirectory:(NSString *)directory fileExtension:(NSString *)fileExtension
+{
+    self = [super init];
+    if (self) {
+        _filePath = [directory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.%@",[NSUUID UUID].UUIDString, (fileExtension.length > 0  ? fileExtension : @"dat")]] ;
+        self.stream = [[NSOutputStream alloc] initToFileAtPath:_filePath append:NO] ;
+        [self.stream open] ;
+    }
+    return self;
+}
 - (NSUInteger)writeData:(NSData *)data {
     if(data && data.length > 0) {
         return [self.stream write:data.bytes maxLength:data.length] ;
@@ -98,7 +108,14 @@
 }
 - (void)receiveRequestSize:(NSUInteger)total {
     self.total = total ;
-    self.writer = [[STWriter alloc] initWithDirectory:_directoryDownload] ;
+    NSString *fileExtension = @"dat";
+    if (self.task.originalRequest.URL) {
+        NSURL *url = self.task.originalRequest.URL;
+        if (url.pathExtension.length > 0) {
+            fileExtension = url.pathExtension;
+        }
+    }
+    self.writer = [[STWriter alloc] initWithDirectory:_directoryDownload fileExtension:fileExtension] ;
 }
 - (void)received:(NSData *)data {
     if([self.writer writeData:data] > 0) {
@@ -153,7 +170,7 @@
 - (instancetype)init {
     NSString *defaultDownloadDirectory = nil ;
     NSString *cacheDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject] ;
-    NSString *defaultDownloadDirName = @"com.st.download";
+    NSString *defaultDownloadDirName = @"com.st.default";
     defaultDownloadDirectory = [cacheDir stringByAppendingPathComponent:defaultDownloadDirName] ;
     return [self initWithMaximumDownloadCount:1 downloadDirectory:defaultDownloadDirectory] ;
 }
@@ -184,19 +201,57 @@
     self.tasks = [[NSMutableArray<STDownloaderTask *> alloc] init] ;
     self.tasksRelationship = [[NSMutableDictionary alloc] init] ;
 }
-
+- (STDownloadReceipt * _Nullable)downloadFileForURLRequest:(NSURLRequest * _Nonnull)request
+                                                 receiptID:(NSUUID * _Nonnull)receiptId
+                                             fileExtension:(NSString * _Nullable)fileExtension
+                                                   success:(STDownloadSuccess _Nullable)success
+                                                  progress:(STDownloadProgress _Nullable)progress
+                                                   failure:(STDownloadFailure _Nullable)failure {
+    return [self downloadFileForURLRequest:request
+                                 receiptID:receiptId
+                             fileExtension:fileExtension
+                                   success:success
+                                  progress:progress
+                                   failure:failure
+                                  complete:nil] ;
+}
+// File extension
 - (STDownloadReceipt * _Nullable)downloadFileForURLRequest:(NSURLRequest * _Nonnull)request
                                                      receiptID:(NSUUID * _Nonnull)receiptId
                                                        success:(STDownloadSuccess _Nullable)success
                                                       progress:(STDownloadProgress _Nullable)progress
                                                        failure:(STDownloadFailure _Nullable)failure {
-    return [self downloadFileForURLRequest:request receiptID:receiptId success:success progress:progress failure:failure complete:nil] ;
+    
+    return [self downloadFileForURLRequest:request
+                                 receiptID:receiptId
+                             fileExtension:nil
+                                   success:success
+                                  progress:progress
+                                   failure:failure
+                                  complete:nil] ;
+}
+
+- (STDownloadReceipt * _Nullable)downloadFileForURLRequest:(NSURLRequest * _Nonnull)request
+                                                 receiptID:(NSUUID * _Nonnull)receiptId
+                                                   success:(STDownloadSuccess _Nullable)success
+                                                  progress:(STDownloadProgress _Nullable)progress
+                                                   failure:(STDownloadFailure _Nullable)failure
+                                                  complete:(STDownloadComplete _Nullable)complete {
+    return [self downloadFileForURLRequest:request
+                                 receiptID:receiptId
+                             fileExtension:nil
+                                   success:success
+                                  progress:progress
+                                   failure:failure
+                                  complete:complete] ;
 }
 - (STDownloadReceipt * _Nullable)downloadFileForURLRequest:(NSURLRequest * _Nonnull)request
                                                       receiptID:(NSUUID * _Nonnull)receiptId
+                                                  fileExtension:(NSString * _Nullable)fileExtension
                                                         success:(STDownloadSuccess _Nullable)success
                                                        progress:(STDownloadProgress _Nullable)progress
-                                                        failure:(STDownloadFailure _Nullable)failure complete:(STDownloadComplete _Nullable)complete{
+                                                        failure:(STDownloadFailure _Nullable)failure
+                                                  complete:(STDownloadComplete _Nullable)complete {
 
     __block NSURLSessionDataTask *task = nil ;
     dispatch_sync(self.syncharonizationQueue, ^{
@@ -226,6 +281,7 @@
         
         
         STDownloaderTask *downloadTask = [[STDownloaderTask alloc] initWithURLIdentifier:URLIdentifier uuid:receiptId task:newTask downloadDirectory:_directoryDownload] ;
+        downloadTask.fileExtension = fileExtension;
         downloadTask.completeBlock = complete ;
         [downloadTask addResponseHandler:handler] ;
         self.tasksRelationship[URLIdentifier] = downloadTask ;

@@ -47,6 +47,8 @@ typedef void (^STDownloadComplete)(NSURLRequest * _Nonnull request,NSString * _N
 @property (nonatomic,assign)NSUInteger total;
 @property (nonatomic,assign)NSUInteger received;
 @property (nonatomic,nonnull,strong)NSMutableArray<STDownloadResponseHandler *> *handlers;
+/** 文件后缀 如果指定了 则使用指定后缀, 否则优先从下载链接解析, 如果解析不到 则默认使用 dat 后缀 */
+@property (nonatomic, strong) NSString *fileExtension;
 - (void)addResponseHandler:(STDownloadResponseHandler *_Nonnull)handler;
 - (void)removeAllHandlers;
 @end
@@ -56,17 +58,34 @@ typedef void (^STDownloadComplete)(NSURLRequest * _Nonnull request,NSString * _N
 /*! max download size 1*/
 + (instancetype _Nonnull )defaultInstance ;
 - (instancetype _Nonnull )initWithMaximumDownloadCount:(NSUInteger)maximumActiveDownloadCount downloadDirectory:(NSString * _Nonnull)downloadDirectory;
+
 - (STDownloadReceipt * _Nullable)downloadFileForURLRequest:(NSURLRequest * _Nonnull)request
-                                                      receiptID:(NSUUID * _Nonnull)receiptId
-                                                        success:(STDownloadSuccess _Nullable)success
-                                                       progress:(STDownloadProgress _Nullable)progress
-                                                        failure:(STDownloadFailure _Nullable)failure ;
+                                                 receiptID:(NSUUID * _Nonnull)receiptId
+                                             fileExtension:(NSString * _Nullable)fileExtension
+                                                   success:(STDownloadSuccess _Nullable)success
+                                                  progress:(STDownloadProgress _Nullable)progress
+                                                   failure:(STDownloadFailure _Nullable)failure;
+
 - (STDownloadReceipt * _Nullable)downloadFileForURLRequest:(NSURLRequest * _Nonnull)request
-                                                     receiptID:(NSUUID * _Nonnull)receiptId
-                                                       success:(STDownloadSuccess _Nullable)success
-                                                      progress:(STDownloadProgress _Nullable)progress
-                                                       failure:(STDownloadFailure _Nullable)failure
-                                                      complete:(STDownloadComplete _Nullable)complete;
+                                                 receiptID:(NSUUID * _Nonnull)receiptId
+                                                   success:(STDownloadSuccess _Nullable)success
+                                                  progress:(STDownloadProgress _Nullable)progress
+                                                   failure:(STDownloadFailure _Nullable)failure;
+
+- (STDownloadReceipt * _Nullable)downloadFileForURLRequest:(NSURLRequest * _Nonnull)request
+                                                 receiptID:(NSUUID * _Nonnull)receiptId
+                                                   success:(STDownloadSuccess _Nullable)success
+                                                  progress:(STDownloadProgress _Nullable)progress
+                                                   failure:(STDownloadFailure _Nullable)failure
+                                                  complete:(STDownloadComplete _Nullable)complete;
+
+- (STDownloadReceipt * _Nullable)downloadFileForURLRequest:(NSURLRequest * _Nonnull)request
+                                                 receiptID:(NSUUID * _Nonnull)receiptId
+                                             fileExtension:(NSString * _Nullable)fileExtension
+                                                   success:(STDownloadSuccess _Nullable)success
+                                                  progress:(STDownloadProgress _Nullable)progress
+                                                   failure:(STDownloadFailure _Nullable)failure
+                                                  complete:(STDownloadComplete _Nullable)complete;
 /*! cancel */
 - (void)safelyCancelTaskWithReceipt:(STDownloadReceipt * _Nonnull)receipt ;
 /*! suspend */
