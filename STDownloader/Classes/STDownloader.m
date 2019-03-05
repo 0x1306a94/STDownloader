@@ -108,11 +108,13 @@
 }
 - (void)receiveRequestSize:(NSUInteger)total {
     self.total = total ;
-    NSString *fileExtension = @"dat";
-    if (self.task.originalRequest.URL) {
-        NSURL *url = self.task.originalRequest.URL;
-        if (url.pathExtension.length > 0) {
-            fileExtension = url.pathExtension;
+    NSString *fileExtension = self.fileExtension;
+    if (!fileExtension) {
+        if (self.task.originalRequest.URL) {
+            NSURL *url = self.task.originalRequest.URL;
+            if (url.pathExtension.length > 0) {
+                fileExtension = url.pathExtension;
+            }
         }
     }
     self.writer = [[STWriter alloc] initWithDirectory:_directoryDownload fileExtension:fileExtension] ;
